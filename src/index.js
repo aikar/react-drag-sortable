@@ -207,6 +207,18 @@ class DragSortableList extends React.Component {
   }
 
   _dragMove(event) {
+    if(typeof this.props.dragLimiter === 'function') {
+      if (!this.props.dragLimiter()) {
+          this._dragEnd();
+          return;
+      }
+    }
+
+    if(this.props.dragCallback) {
+      if(typeof this.props.dragCallback === 'function') {
+          this.props.dragCallback();
+      }
+    }
     const target = event.target
     const { dragging } = this.state
 
@@ -250,13 +262,35 @@ class DragSortableList extends React.Component {
   }
 
   _dragEnd(event) {
+
+    if(typeof this.props.dragLimiter === 'function') {
+      if (!this.props.dragLimiter()) {
+        return;
+      }
+    }
+
     const { onSort, dropBackTransitionDuration } = this.props
     const { dragging, items: stateItems} = this.state
     const items = this._moveItem()
     let draggedEl = this.refs[this.ref + 'dragged']
 
-    if(!draggedEl) return
+    // Fixes a bug when dragging is stopped because of outside refresh.
+    if(typeof stateItems === 'undefined') {
+      this.setState({
+        dragging: null,
+        placeholder: null,
+      });
+      return;
+    }
 
+    if(typeof items === 'undefined') {
+      this.setState({
+        dragging: null,
+        placeholder: null,
+      });
+      return;
+    }
+    if(!draggedEl) return
     // Add transition if rank hasn't changed
     const draggedBefore = stateItems.find(item => item.id === dragging.id)
     const draggedAfter = items.find(item => item.id === dragging.id)
@@ -287,6 +321,13 @@ class DragSortableList extends React.Component {
   }
 
   _moveItem() {
+
+    if(typeof this.props.dragLimiter === 'function') {
+      if (!this.props.dragLimiter()) {
+        return;
+      }
+    }
+
     const { items: stateItems, placeholder, dragging } = this.state
     let items = clone(stateItems, true)
 
